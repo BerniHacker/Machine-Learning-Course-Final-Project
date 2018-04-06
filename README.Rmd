@@ -27,7 +27,7 @@ The repository contains the following files:
 </ul>
 <li>`A_Prediction_Model_Project_in_R` (both in RMD and HTML format)</li>
 <ul>
-<li>The actual final project of the course. Go to the HTML version of the files, copy the all content and paste it here on the left window: https://codebeautify.org/htmlviewer/# Then click RUN and you will be able to read the all report, including the output of the R code and the plots.</li>
+<li>The actual final project of the course. In oder to see the all report, including the output of the R code and the plots, go to the HTML version of the file, copy the URL and paste it into the URL field at this other page: http://htmlpreview.github.io/ </li>
 </ul>
 </ul>
 
