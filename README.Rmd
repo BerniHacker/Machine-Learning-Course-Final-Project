@@ -33,4 +33,4 @@ The repository contains the following files:
 
 **Message to the grader:**
 
-Please note that the prediction has not been included in the report since it would violate the Coursera's Honor Code, since it would contain the answers to the graded Quiz of week 4.
+Please note that the prediction has not been included in the report since it would violate the Coursera's Honor Code, because it would contain the answers to the graded Quiz of week 4.
