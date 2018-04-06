@@ -31,7 +31,7 @@ The repository contains the following files:
 </ul>
 </ul>
 
-The RMD files are accessible by using RStudio.
+Go to the HTML version of the files, copy the all content and paste it here on the left window: https://codebeautify.org/htmlviewer/# Then click RUN and you will be able to read the all report, including the output of the R code and the plots.
 
 **Message to the grader:**
 
