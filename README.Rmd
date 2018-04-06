@@ -12,7 +12,7 @@ The project uses existing data available at http://groupware.les.inf.puc-rio.br/
 The repository contains the following files:
 
 <ul>
-<li>`README` (this file, both in RMD and HTML format)</li>
+<li>`README` (this file)</li>
 <li>`pml-testing`</li>
 <ul>
 <li>csv file containing the testing data set</li>
@@ -27,11 +27,9 @@ The repository contains the following files:
 </ul>
 <li>`A_Prediction_Model_Project_in_R` (both in RMD and HTML format)</li>
 <ul>
-<li>The actual final project of the course</li>
+<li>The actual final project of the course. Go to the HTML version of the files, copy the all content and paste it here on the left window: https://codebeautify.org/htmlviewer/# Then click RUN and you will be able to read the all report, including the output of the R code and the plots.</li>
 </ul>
 </ul>
-
-Go to the HTML version of the files, copy the all content and paste it here on the left window: https://codebeautify.org/htmlviewer/# Then click RUN and you will be able to read the all report, including the output of the R code and the plots.
 
 **Message to the grader:**
 
