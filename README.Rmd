@@ -1,0 +1,38 @@
+---
+title: "README"
+author: "Bernardo Di Chiara"
+date: "April 6, 2018"
+output: html_document
+---
+
+This repository contains files related to the final project of the course "Practical Machine Learning" by Johns Hopkins University on Coursera platform.
+
+The project uses existing data available at http://groupware.les.inf.puc-rio.br/har#weight_lifting_exercises
+
+The repository contains the following files:
+
+<ul>
+<li>`README` (this file, both in RMD and HTML format)</li>
+<li>`pml-testing`</li>
+<ul>
+<li>csv file containing the testing data set</li>
+</ul>
+<li>`pml-training`</li>
+<ul>
+<li>csv file containing the training data set</li>
+</ul>
+<li>`Weight Lifting Exercises Article`</li>
+<ul>
+<li>pdf file containing the publication which this project is based on</li>
+</ul>
+<li>`A_Prediction_Model_Project_in_R` (both in RMD and HTML format)</li>
+<ul>
+<li>The actual final project of the course</li>
+</ul>
+</ul>
+
+The RMD files are accessible by using RStudio.
+
+**Message to the grader:**
+
+Please note that the prediction has not been included in the report since it would violate the Coursera's Honor Code, since it would contain the answers to the graded Quiz of week 4.

@@ -1,0 +1,240 @@
+---
+title: "A Prediction Model Project in R"
+author: "Bernardo Di Chiara"
+date: "April 5, 2018"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+---
+
+## 1. Introduction
+
+This project consists on building and comparing different prediction models with the purpose of predicting the quality of physical activity based on a set of measured and calculated variables related to such activity.
+
+## 2. Background
+
+This project is based on the work published in the document below:
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. "Qualitative Activity Recognition of Weight Lifting Exercises." Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13). Stuttgart, Germany: ACM SIGCHI, 2013.
+
+http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf
+
+It is a study about physical activity recognition. While most of similar projects usually focus on the quality of physical activity, this study aims to measure the quality of the movements.
+
+Six participants (males, aged between 20-28 years, with little weight lifting experience) were provided with sensors (accelerometer, gyroscope and magnetometer) on four different points: belt, forearm, arm, and dumbell. Then they were asked to perform barbell lifts (Unilateral Dumbbell Biceps Curl) correctly and incorrectly in 5 different ways:
+
+- Exactly according to the specification (Class A)
+- Throwing the elbows to the front (Class B)
+- Lifting the dumbbell only halfway (Class C)
+- Lowering the dumbbell only halfway (Class D)
+- Throwing the hips to the front (Class E)
+
+Classes B to E cover the most common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate.
+
+Each participant was asked to perform one set of 10 repetitions for each class. Measurements from the sensors were taken during different time windows.
+
+## 3. Setup
+
+```{r}
+# Downloading the training data set
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile="pml-training.csv")
+# Downloading the testing data set
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", destfile="pml-testing.csv")
+```
+
+```{r}
+# Importing data from the csv files
+training = read.csv("pml-training.csv", na.strings=c("", "NA"))
+testing = read.csv("pml-testing.csv")
+```
+
+```{r message=FALSE, warning=FALSE}
+# Loading the needed R packages
+library(dplyr) # Data manipulation
+library(caret) # Creating models
+library(doParallel) # Decreasing processing time
+```
+
+## 4. Analysis of the Raw Data
+
+The training data set has 19622 observations. The testing data set has 20 observations. They both have 160 variables.
+
+The first variable <code>X</code> is basically the row number (integer).
+
+The second variable <code>user_name</code> is a 6 levels factorial variable that indicates the participant.
+
+The next seven variables (integer or factorial) are related to the actual time window.
+
+The last variable differs in the training and test sets. In the training set, the variable <code>classe</code> (5 levels factorial variable) indicates the class described in section 2. In the testing set, the integer variable <code>problem_id</code> has identical values to the variable <code>X</code>.
+
+The remaining variables are numerical, integer and logical variables indicating one of the following things: measurements from the 4 different 9-degrees-of-freedom measurement units, calculated features based on such measurements, statistics about the calculated features.
+
+Each observation refers to one participant, one class, one specific repetition and a certain time window.
+
+No code book describing in details the meaning of each variable seem to be available.
+
+## 5. Modeling
+
+## 5.1. Selecting the Explanatory Variables
+
+The variable <code>X</code> has no predictive value and therefore it is eliminated from the list of predictors, together with the 5 variables related to the time window, since it is assumed that the time of the movement does not affect its correctness. The variable <code>classe</code> is the predicted variable. Also, 100 variables seem to have 19216 NA entries (out of 19622), that is about 98% of all the observations. It is expected that their predictive power will not be huge and therefore, in order to simplify the model, those variables are eliminated. The variables with NA values have been identified by using the function <code>NAcounts</code> shown below. They are calculated statistical variables.
+
+```{r}
+# This function takes a dataframe with r rows and c columns as input and prints a dataframe of c rows containing the number of NA values contained in each column of the dataframe
+NAcounts <- function (dataframe) {
+# Initializing the result vector of length equal to the number of columns
+  result <- data.frame(rep(0, ncol(dataframe)))
+# Initializing a counter
+  i=1
+# For each column of the dataframe
+  for (i in 1:ncol(dataframe)) {
+  # Calculating the number of rows with NA value and copying it in the result  
+  # dataframe in the corresponding row
+    result[i,1] <- sum(is.na(dataframe[,i])) 
+  # Increment the counter
+    i=i+1                      }
+# Extracting the column names of the original dataframe and binding them to the result dataframe together with the column number
+  result <- cbind(1:ncol(dataframe), names(dataframe), result)
+# Changing the column names of the result dataframe
+  names(result) <- c("Column.number", "Column.names", "Number.of.NAs")
+# Print the result
+  result                          }
+```
+
+```{r}
+# Filtering which column have NAs values
+NAcounts(training) %>%
+  filter(Number.of.NAs!=0)
+```
+
+Two new dataframes are created that contain only the remaining 53 variables plus the response variable. Those variables are all numerical or integer, except for <code>user_name</code>, <code>classe</code> and <code>problem_id</code>.
+
+```{r}
+# Filtering columns with non NA values
+Filtered <- NAcounts(training) %>%
+  filter(Number.of.NAs==0)
+# Copying those columns from the training data set in a new dataframe
+trainingmod <- training[,Filtered$Column.number]
+# Removing the row number and the time window related variables from the training data set
+trainingmod <- trainingmod %>%
+  select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2, -cvtd_timestamp, -new_window, -num_window)
+# Applying the same algorithm to the testing set
+test <- testing[,Filtered$Column.number]
+test <- test %>%
+  select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2, -cvtd_timestamp, -new_window, -num_window)
+```
+
+### 5.1.1. Complete List of Predicting Variables
+
+user_name
+
+belt variables   | arm variables    | dumbbell variables   | forearm variables
+---------------- | ---------------- | -------------------- | -----------------
+roll_belt        | roll_arm         | roll_dumbbell        | roll_forearm
+pitch_belt       | pitch_arm        | pitch_dumbbell       | pitch_forearm
+yaw_belt         | yaw_arm          | yaw_dumbbell         | yaw_forearm
+total_accel_belt | total_accel_arm  | total_accel_dumbbell | total_accel_forearm
+gyros_belt_x     | gyros_arm_x      | gyros_dumbbell_x     | gyros_forearm_x
+gyros_belt_y     | gyros_arm_y      | gyros_dumbbell_y     | gyros_forearm_y
+gyros_belt_z     | gyros_arm_z      | gyros_dumbbell_z     | gyros_forearm_z
+accel_belt_x     | accel_arm_x      | accel_dumbbell_x     | accel_forearm_x
+accel_belt_y     | accel_arm_y      | accel_dumbbell_y     | accel_forearm_y
+accel_belt_z     | accel_arm_z      | accel_dumbbell_z     | accel_forearm_z
+magnet_belt_x    | magnet_arm_x     | magnet_dumbbell_x    | magnet_forearm_x
+magnet_belt_y    | magnet_arm_y     | magnet_dumbbell_y    | magnet_forearm_y
+magnet_belt_z    | magnet_arm_z     | magnet_dumbbell_z    | magnet_forearm_z
+
+## 5.2. Response Variable
+
+The purpose of the model is to be able to predict the value of the variable <code>classe</code>.
+
+## 5.3. Data Preparation
+
+Two different prediction models are created and then compared. In order to do this, the training set is divided into a building data set (that is used to train the models) and a validation data set (needed to compare the models), before processing the data any further. This method utilizes a random sampling cross validation technique.
+
+```{r}
+# Creating a building data set and a validation data set
+set.seed(5418) # This ensures repeatability
+inBuild <- createDataPartition(y=trainingmod$classe, p=0.7, list=FALSE)
+build <- trainingmod[inBuild,]
+validate <- trainingmod[-inBuild,]
+```
+
+The data set <code>build</code> has 13737 observations and the data set <code>validate</code> has 5885 observations.
+
+## 5.4. Model 1: Bagging (tree bag)
+
+```{r}
+# Fitting a bagging model
+set.seed(6418)
+modtb <- train(classe ~., data=build, method="treebag")
+modtb
+```
+
+## 5.5. Model 2: Random Forest
+
+```{r}
+# Fitting a random forest model
+set.seed(6418)
+modrf <- train(classe ~., data=build, method="rf", trControl = trainControl(method = "oob"), allowParallel = TRUE)
+modrf
+```
+
+```{r}
+modrf$finalModel
+```
+
+```{r}
+# Calculating the importance of the variables
+varImp <- varImp(modrf)
+varImp
+```
+
+The most important predictors are: <code>roll_belt</code>, <code>pitch_forearm</code>, <code>yaw_belt</code>, <code>magnet_dumbbell_y</code>, <code>roll_forearm</code>, <code>magnet_dumbbell_z</code>, 
+<code>pitch_belt</code>,  and <code>accel_dumbbell_y</code>. This is consistent to what can be found also for the Bagging model in section 5.4. (code omitted from the report for brevity).
+
+The figure below shows the first ten variables for the random forest model.
+
+```{r}
+# Variable importance for the random forest model
+plot(varImp, top = 10, main = "Variable Importance (random forest)",
+     xlab = "Importance", ylab = "Variable Name")
+```
+
+## 5.6. Cross Validation and Model Comparison
+
+Based on the data collected above, small out of sample errors are expected. The random forest model is expected to be a bit more accurate.
+
+```{r}
+# Validating the models
+predtb <- predict(modtb, validate) # Predicting by using the bagging model and the validation data set
+predrf <- predict(modrf, validate) # Predicting by using the random forest model and the validation data set
+
+```
+
+```{r}
+# Confusion matrix of the bagging model
+confMatrixtb <- confusionMatrix(predtb,validate$classe)
+confMatrixtb
+```
+
+```{r}
+# Confusion matrix of the random forest model
+confMatrixrf <- confusionMatrix(predrf,validate$classe)
+confMatrixrf
+```
+
+Both models are quite accurate. The bagging model has an accuracy on the validation data of 0.9844. The random forest model has an accuracy of 0.9924 on the same data and therefore it is preferred.
+
+## 6. Conclusions
+
+The original data has been cleaned by eliminating non-meaningful predictors.
+
+The original training data set has been split into a building and a validating data sets. Two different models have been created with the first set and then validated and compared with the second set. Both models performed well and the random forest model performed a bit better than the tree bagging model. The two models gave also consistent results regarding the list of the most influential predictors.
+
+It is worth to note that the participant id has been included among the predictors in those models. It would be interesting in future research to study how the response variable varies with the participant id and how accurate models it would be possible to get by eliminating this variable. This would be useful in order to obtain a model able to predict the quality of the execution based on the set of sensor measurements for new subjects.
+
+* * *
+
+<sub>R version 3.4.3 on Windows 10</sub>
